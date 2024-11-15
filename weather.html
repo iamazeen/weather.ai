@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap');
+
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --text-color: #ecf0f1;
+            --card-bg: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 2rem;
+            position: relative;
+            overflow-y: auto; /* Changed from hidden to auto */
+        }
+
+        /* Weather animations */
+        .weather-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        /* Sun animation */
+        .sun {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: #ffd700;
+            border-radius: 50%;
+            box-shadow: 0 0 50px #ffd700;
+            animation: sunFloat 4s ease-in-out infinite;
+            display: none;
+        }
+
+        /* Cloud animations */
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 20px;
+            animation: cloudFloat 15s linear infinite;
+            display: none;
+        }
+
+        .cloud:nth-child(1) { width: 100px; height: 40px; top: 20%; }
+        .cloud:nth-child(2) { width: 80px; height: 30px; top: 40%; animation-delay: -5s; }
+        .cloud:nth-child(3) { width: 120px; height: 45px; top: 60%; animation-delay: -10s; }
+
+        /* Rain animations */
+        .raindrop {
+            position: absolute;
+            width: 2px;
+            height: 20px;
+            background: rgba(255, 255, 255, 0.6);
+            animation: rain 1s linear infinite;
+            display: none;
+        }
+
+        /* Snow animations */
+        .snowflake {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: white;
+            border-radius: 50%;
+            animation: snow 5s linear infinite;
+            display: none;
+        }
+
+        /* Lightning animation */
+        .lightning {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            animation: lightning 5s infinite;
+            display: none;
+        }
+
+        @keyframes sunFloat {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(0, -20px); }
+        }
+
+        @keyframes cloudFloat {
+            from { left: -150px; }
+            to { left: 100%; }
+        }
+
+        @keyframes rain {
+            from { transform: translateY(-100vh); }
+            to { transform: translateY(100vh); }
+        }
+
+        @keyframes snow {
+            from {
+                transform: translateY(-10vh) rotate(0deg);
+            }
+            to {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+
+        @keyframes lightning {
+            0%, 95%, 100% { opacity: 0; }
+            96%, 99% { opacity: 1; }
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .weather-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem 0;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .current-weather {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .temperature {
+            font-size: 4rem;
+            font-weight: 600;
+        }
+
+        .feels-like {
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        .weather-icon {
+            font-size: 5rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .weather-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .detail-card {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 15px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .detail-card i {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .detail-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .forecast {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .forecast-card {
+            background: var(--card-bg);
+            padding: 1rem;
+            border-radius: 15px;
+            text-align: center;
+            animation: slideIn 0.5s ease-in;
+        }
+
+        .sun-times {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--card-bg);
+            border-radius: 15px;
+        }
+
+        .sun-times i {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #fff;
+        }
+
+        .ai-weather-report {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 15px;
+            margin-top: 2rem;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .weather-chat {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 15px;
+            margin-top: 2rem;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--text-color);
+            font-family: inherit;
+        }
+
+        .chat-input button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 10px;
+            background: var(--accent-color);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .chat-input button:hover {
+            background: #c0392b;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="weather-animation">
+        <div class="sun"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+        <div class="cloud"></div>
+        <div class="lightning"></div>
+        <!-- Rain drops and snowflakes will be added dynamically -->
+    </div>
+
+    <div class="container">
+        <div class="weather-card">
+            <div class="current-weather">
+                <div>
+                    <h1 id="location"><i class="fas fa-map-marker-alt"></i> Loading location...</h1>
+                    <p class="temperature" id="current-temp">Loading...</p>
+                    <p class="feels-like" id="feels-like"><i class="fas fa-thermometer-half"></i> Feels like: Loading...</p>
+                    <p id="weather-desc"><i class="fas fa-cloud"></i> Loading...</p>
+                </div>
+                <div class="weather-icon" id="weather-icon">🌤️</div>
+            </div>
+            
+            <div class="sun-times">
+                <div>
+                    <i class="fas fa-sunrise"></i>
+                    <h3>Sunrise</h3>
+                    <p id="sunrise">Loading...</p>
+                </div>
+                <div>
+                    <i class="fas fa-sunset"></i>
+                    <h3>Sunset</h3>
+                    <p id="sunset">Loading...</p>
+                </div>
+            </div>
+            
+            <div class="weather-details">
+                <div class="detail-card">
+                    <i class="fas fa-tint"></i>
+                    <h3>Humidity</h3>
+                    <p id="humidity">Loading...</p>
+                </div>
+                <div class="detail-card">
+                    <i class="fas fa-wind"></i>
+                    <h3>Wind Speed</h3>
+                    <p id="wind-speed">Loading...</p>
+                </div>
+                <div class="detail-card">
+                    <i class="fas fa-compass"></i>
+                    <h3>Wind Direction</h3>
+                    <p id="wind-direction">Loading...</p>
+                </div>
+                <div class="detail-card">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <h3>Pressure</h3>
+                    <p id="pressure">Loading...</p>
+                </div>
+                <div class="detail-card">
+                    <i class="fas fa-eye"></i>
+                    <h3>Visibility</h3>
+                    <p id="visibility">Loading...</p>
+                </div>
+                <div class="detail-card">
+                    <i class="fas fa-cloud"></i>
+                    <h3>Cloud Cover</h3>
+                    <p id="clouds">Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="forecast" id="forecast-container">
+            <!-- Forecast cards will be dynamically populated -->
+        </div>
+
+        <div class="ai-weather-report" id="ai-report">
+            <h2><i class="fas fa-robot"></i> AI Weather Analysis</h2>
+            <p id="ai-analysis">Loading AI analysis...</p>
+        </div>
+
+        <div class="weather-chat">
+            <h2><i class="fas fa-comments"></i> Ask About the Weather</h2>
+            <p>Ask any questions about the current weather conditions!</p>
+            <div class="chat-input">
+                <input type="text" id="weather-question" placeholder="Ask about the weather...">
+                <button onclick="askWeatherQuestion()"><i class="fas fa-paper-plane"></i> Ask</button>
+            </div>
+            <p id="ai-response" style="margin-top: 1rem;"></p>
+        </div>
+    </div>
+
+    <script>
+        const WEATHER_API_KEY = '4d8fb5b93d4af21d66a2948710284366';
+        const GEMINI_API_KEY = 'AIzaSyAGM8oR5ALUQiD4QFXQDb6_wBXA7N3tMVU';
+        
+        let currentWeatherData = null;
+        
+        const weatherIcons = {
+            'sunny': '☀️',
+            'partly_cloudy': '🌤️',
+            'cloudy': '☁️',
+            'overcast': '☁️',
+            'mist': '🌫️',
+            'rain': '🌧️',
+            'snow': '🌨️',
+            'thunder': '⛈️'
+        };
+
+        function updateWeatherAnimation(weatherCondition) {
+            const weatherAnimation = document.querySelector('.weather-animation');
+            const sun = document.querySelector('.sun');
+            const clouds = document.querySelectorAll('.cloud');
+            const lightning = document.querySelector('.lightning');
+            
+            // Clear existing animations
+            weatherAnimation.innerHTML = '';
+            weatherAnimation.appendChild(sun);
+            clouds.forEach(cloud => weatherAnimation.appendChild(cloud));
+            weatherAnimation.appendChild(lightning);
+
+            // Reset all elements
+            sun.style.display = 'none';
+            clouds.forEach(cloud => cloud.style.display = 'none');
+            lightning.style.display = 'none';
+
+            // Remove existing raindrops and snowflakes
+            document.querySelectorAll('.raindrop, .snowflake').forEach(el => el.remove());
+
+            const condition = weatherCondition.toLowerCase();
+
+            if (condition.includes('clear')) {
+                sun.style.display = 'block';
+            } else if (condition.includes('cloud')) {
+                clouds.forEach(cloud => cloud.style.display = 'block');
+                if (!condition.includes('heavy')) {
+                    sun.style.display = 'block';
+                }
+            } else if (condition.includes('rain')) {
+                clouds.forEach(cloud => cloud.style.display = 'block');
+                // Add raindrops
+                for (let i = 0; i < 50; i++) {
+                    const raindrop = document.createElement('div');
+                    raindrop.className = 'raindrop';
+                    raindrop.style.left = `${Math.random() * 100}%`;
+                    raindrop.style.animationDelay = `${Math.random() * 2}s`;
+                    raindrop.style.display = 'block';
+                    weatherAnimation.appendChild(raindrop);
+                }
+            } else if (condition.includes('snow')) {
+                clouds.forEach(cloud => cloud.style.display = 'block');
+                // Add snowflakes
+                for (let i = 0; i < 50; i++) {
+                    const snowflake = document.createElement('div');
+                    snowflake.className = 'snowflake';
+                    snowflake.style.left = `${Math.random() * 100}%`;
+                    snowflake.style.animationDelay = `${Math.random() * 5}s`;
+                    snowflake.style.display = 'block';
+                    weatherAnimation.appendChild(snowflake);
+                }
+            } else if (condition.includes('thunder')) {
+                clouds.forEach(cloud => cloud.style.display = 'block');
+                lightning.style.display = 'block';
+                // Add rain with thunder
+                for (let i = 0; i < 50; i++) {
+                    const raindrop = document.createElement('div');
+                    raindrop.className = 'raindrop';
+                    raindrop.style.left = `${Math.random() * 100}%`;
+                    raindrop.style.animationDelay = `${Math.random() * 2}s`;
+                    raindrop.style.display = 'block';
+                    weatherAnimation.appendChild(raindrop);
+                }
+            }
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'fadeIn 0.5s ease-in forwards';
+                }
+            });
+        });
+
+        document.querySelectorAll('.weather-card, .forecast-card, .ai-weather-report, .weather-chat').forEach((el) => observer.observe(el));
+
+        async function askWeatherQuestion() {
+            const question = document.getElementById('weather-question').value;
+            const aiResponse = document.getElementById('ai-response');
+            
+            if (!question || !currentWeatherData) return;
+            
+            aiResponse.textContent = 'Thinking...';
+            
+            try {
+                const weatherInfo = `Current weather conditions:
+                    Location: ${currentWeatherData.current.name}
+                    Temperature: ${currentWeatherData.current.main.temp}°C
+                    Feels like: ${currentWeatherData.current.main.feels_like}°C
+                    Weather: ${currentWeatherData.current.weather[0].description}
+                    Humidity: ${currentWeatherData.current.main.humidity}%
+                    Wind: ${currentWeatherData.current.wind.speed} m/s
+                    Pressure: ${currentWeatherData.current.main.pressure} hPa
+                    Visibility: ${currentWeatherData.current.visibility} meters
+                    Cloud cover: ${currentWeatherData.current.clouds.all}%
+                    Sunrise: ${formatTime(currentWeatherData.current.sys.sunrise)}
+                    Sunset: ${formatTime(currentWeatherData.current.sys.sunset)}`;
+
+                const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=' + GEMINI_API_KEY, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `Using these real-time weather conditions:\n${weatherInfo}\n\nPlease answer this weather-related question: ${question}`
+                            }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                aiResponse.textContent = data.candidates[0].content.parts[0].text;
+            } catch (error) {
+                aiResponse.textContent = 'Sorry, I could not process your question at the moment.';
+                console.error('Error:', error);
+            }
+        }
+
+        async function getAIWeatherAnalysis(weatherData) {
+            try {
+                const prompt = `Analyze this weather data and provide a brief, natural language summary: 
+                    Temperature: ${weatherData.current.main.temp}°C, 
+                    Weather: ${weatherData.current.weather[0].description},
+                    Humidity: ${weatherData.current.main.humidity}%,
+                    Wind: ${weatherData.current.wind.speed} m/s`;
+
+                const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=' + GEMINI_API_KEY, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: prompt
+                            }]
+                        }]
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('AI API request failed');
+                }
+
+                const data = await response.json();
+                
+                if (!data.candidates || !data.candidates[0] || !data.candidates[0].content || !data.candidates[0].content.parts || !data.candidates[0].content.parts[0].text) {
+                    throw new Error('Invalid AI response format');
+                }
+
+                return data.candidates[0].content.parts[0].text;
+            } catch (error) {
+                console.error('Error getting AI analysis:', error);
+                return 'AI analysis unavailable at the moment. Please try again later.';
+            }
+        }
+
+        async function getWeatherData(latitude, longitude) {
+            try {
+                const currentResponse = await fetch(
+                    `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${WEATHER_API_KEY}&units=metric`
+                );
+                const currentData = await currentResponse.json();
+
+                const forecastResponse = await fetch(
+                    `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&appid=${WEATHER_API_KEY}&units=metric`
+                );
+                const forecastData = await forecastResponse.json();
+
+                // Store current weather data globally
+                currentWeatherData = {
+                    current: currentData,
+                    forecast: forecastData
+                };
+
+                // Update weather animation
+                updateWeatherAnimation(currentData.weather[0].main);
+
+                // Get AI analysis
+                const aiAnalysis = await getAIWeatherAnalysis(currentWeatherData);
+                document.getElementById('ai-analysis').textContent = aiAnalysis;
+
+                return currentWeatherData;
+            } catch (error) {
+                console.error('Error fetching weather data:', error);
+                throw error;
+            }
+        }
+
+        function getWindDirection(degrees) {
+            const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+            const index = Math.round(degrees / 22.5) % 16;
+            return directions[index];
+        }
+
+        function formatTime(timestamp) {
+            return new Date(timestamp * 1000).toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        function updateCurrentWeather(data) {
+            const current = data.current;
+            document.getElementById('current-temp').textContent = `${Math.round(current.main.temp)}°C`;
+            document.getElementById('feels-like').innerHTML = `<i class="fas fa-thermometer-half"></i> Feels like: ${Math.round(current.main.feels_like)}°C`;
+            document.getElementById('weather-desc').innerHTML = `<i class="fas fa-cloud"></i> ${current.weather[0].description}`;
+            document.getElementById('humidity').textContent = `${current.main.humidity}%`;
+            document.getElementById('wind-speed').textContent = `${Math.round(current.wind.speed * 3.6)} km/h`;
+            document.getElementById('wind-direction').textContent = getWindDirection(current.wind.deg);
+            document.getElementById('pressure').textContent = `${current.main.pressure} hPa`;
+            document.getElementById('visibility').textContent = `${(current.visibility / 1000).toFixed(1)} km`;
+            document.getElementById('clouds').textContent = `${current.clouds.all}%`;
+            document.getElementById('sunrise').textContent = formatTime(current.sys.sunrise);
+            document.getElementById('sunset').textContent = formatTime(current.sys.sunset);
+            
+            const condition = current.weather[0].main.toLowerCase();
+            let icon = '🌤️';
+            if (condition.includes('clear')) icon = weatherIcons.sunny;
+            else if (condition.includes('cloud') && current.clouds.all < 50) icon = weatherIcons.partly_cloudy;
+            else if (condition.includes('cloud')) icon = weatherIcons.cloudy;
+            else if (condition.includes('rain')) icon = weatherIcons.rain;
+            else if (condition.includes('snow')) icon = weatherIcons.snow;
+            else if (condition.includes('thunder')) icon = weatherIcons.thunder;
+            else if (condition.includes('mist') || condition.includes('fog')) icon = weatherIcons.mist;
+            
+            document.getElementById('weather-icon').textContent = icon;
+        }
+
+        function updateForecast(data) {
+            const forecastContainer = document.getElementById('forecast-container');
+            forecastContainer.innerHTML = '';
+            
+            const dailyForecasts = data.forecast.list.filter(item => {
+                const hour = new Date(item.dt * 1000).getHours();
+                return hour === 12;
+            }).slice(0, 5);
+
+            dailyForecasts.forEach(forecast => {
+                const date = new Date(forecast.dt * 1000);
+                const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                
+                const condition = forecast.weather[0].main.toLowerCase();
+                let icon = '🌤️';
+                if (condition.includes('clear')) icon = weatherIcons.sunny;
+                else if (condition.includes('cloud') && forecast.clouds.all < 50) icon = weatherIcons.partly_cloudy;
+                else if (condition.includes('cloud')) icon = weatherIcons.cloudy;
+                else if (condition.includes('rain')) icon = weatherIcons.rain;
+                else if (condition.includes('snow')) icon = weatherIcons.snow;
+                else if (condition.includes('thunder')) icon = weatherIcons.thunder;
+                else if (condition.includes('mist') || condition.includes('fog')) icon = weatherIcons.mist;
+                
+                const forecastCard = document.createElement('div');
+                forecastCard.className = 'forecast-card';
+                forecastCard.innerHTML = `
+                    <h3>${dayName}</h3>
+                    <p>${icon}</p>
+                    <p><i class="fas fa-temperature-high"></i> ${Math.round(forecast.main.temp)}°C</p>
+                    <p><i class="fas fa-tint"></i> ${forecast.main.humidity}%</p>
+                    <p><i class="fas fa-wind"></i> ${Math.round(forecast.wind.speed * 3.6)} km/h</p>
+                `;
+                forecastContainer.appendChild(forecastCard);
+            });
+        }
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async position => {
+                const { latitude, longitude } = position.coords;
+                try {
+                    const locationResponse = await fetch(`https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${WEATHER_API_KEY}`);
+                    const locationData = await locationResponse.json();
+                    document.getElementById('location').innerHTML = `<i class="fas fa-map-marker-alt"></i> ${locationData[0].name}`;
+
+                    const weatherData = await getWeatherData(latitude, longitude);
+                    updateCurrentWeather(weatherData);
+                    updateForecast(weatherData);
+                } catch (error) {
+                    document.getElementById('location').innerHTML = '<i class="fas fa-exclamation-circle"></i> Weather Data Unavailable';
+                    console.error('Error:', error);
+                }
+            }, () => {
+                document.getElementById('location').innerHTML = '<i class="fas fa-ban"></i> Location Access Denied';
+            });
+        } else {
+            document.getElementById('location').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Geolocation Not Supported';
+        }
+
+        // Add event listener for Enter key in the question input
+        document.getElementById('weather-question').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                askWeatherQuestion();
+            }
+        });
+    </script>
+</body>
+</html>
